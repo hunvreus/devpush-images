@@ -18,7 +18,7 @@ RUN apt-get update && \
         unzip \
         zip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" \
+    && MAKEFLAGS="-j1" docker-php-ext-install \
         bcmath \
         gd \
         intl \
