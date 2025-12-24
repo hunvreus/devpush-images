@@ -1,0 +1,53 @@
+FROM dunglas/frankenphp:1-php8.3
+
+HEALTHCHECK NONE
+
+# Install system dependencies and PHP extensions
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        git \
+        libicu-dev \
+        libonig-dev \
+        libpng-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
+        libpq-dev \
+        libzip-dev \
+        unzip \
+        zip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        bcmath \
+        gd \
+        intl \
+        mbstring \
+        opcache \
+        pcntl \
+        pdo \
+        pdo_mysql \
+        pdo_pgsql \
+        zip \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && rm -rf /var/lib/apt/lists/*
+
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Create non-root user
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup --home /home/appuser appuser && \
+    install -d -m 0755 -o appuser -g appgroup /home/appuser
+
+WORKDIR /app
+
+# Remove default files from base image
+RUN rm -rf /app/* /app/.[!.]* /app/..?* 2>/dev/null || true
+
+# Permissions
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
+ENV HOME=/home/appuser

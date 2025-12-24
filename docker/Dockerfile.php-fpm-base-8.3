@@ -1,0 +1,75 @@
+FROM php:8.3-fpm-bookworm
+
+# Install system dependencies and PHP extensions
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        ca-certificates \
+        curl \
+        caddy \
+        unzip \
+        zip \
+        libicu-dev \
+        libonig-dev \
+        libpng-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
+        libpq-dev \
+        libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        bcmath \
+        gd \
+        intl \
+        mbstring \
+        opcache \
+        pcntl \
+        pdo \
+        pdo_mysql \
+        pdo_pgsql \
+        zip \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && rm -rf /var/lib/apt/lists/*
+
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Create non-root user
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup --home /home/appuser appuser && \
+    install -d -m 0755 -o appuser -g appgroup /home/appuser
+
+WORKDIR /app
+
+# Ensure system sbin paths are available for php-fpm and other daemons.
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Configure PHP-FPM defaults without mutating the stock pool file.
+RUN printf '%s\n' \
+      '[www]' \
+      'user = appuser' \
+      'group = appgroup' \
+      'listen = 127.0.0.1:9000' \
+      'clear_env = no' \
+      > /usr/local/etc/php-fpm.d/zz-devpush.conf && \
+    printf '%s\n' \
+      '[global]' \
+      'pid = /tmp/php-fpm.pid' \
+      > /usr/local/etc/php-fpm.d/zz-devpush-global.conf
+
+# Default Caddy config (Laravel-style)
+RUN install -d -m 0755 /etc/caddy && \
+    printf '%s\n' \
+      ':8000' \
+      'root * /app/public' \
+      'encode zstd gzip' \
+      'php_fastcgi 127.0.0.1:9000' \
+      'file_server' \
+      > /etc/caddy/Caddyfile
+
+# Permissions
+RUN chown -R appuser:appgroup /app /etc/caddy
+
+USER appuser
+
+ENV HOME=/home/appuser
