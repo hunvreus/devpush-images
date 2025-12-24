@@ -1,15 +1,25 @@
 # /dev/push images
 
-Base images used by /dev/push runner builds. This repo only contains the base
-images (PHP-FPM and FrankenPHP) so local runner builds can reuse layers and
-stay fast. Runner images stay in the main devpush repo.
+High-performance, multi-architecture base images for /dev/push runner builds. 
+Optimized for Laravel and modern PHP applications.
 
-## Publish
+## General Features
 
-1) Push to `main` (or trigger the workflow manually in GitHub Actions).
-2) The workflow builds and publishes multi-arch images to GHCR:
-   - `ghcr.io/hunvreus/devpush-php-fpm-base:8.3`
-   - `ghcr.io/hunvreus/devpush-frankenphp-base:8.3`
+- **Multi-Arch:** Native support for `linux/amd64` and `linux/arm64` (Apple Silicon/AWS Graviton).
+- **Security:** Runs as non-root `appuser` (UID 1000) by default.
+- **Performance:** Includes OpCache and JIT configurations optimized for container environments.
+- **Tooling:** Composer 2.x included.
 
-The workflow uses `GITHUB_TOKEN` with `packages: write`, so no local token is
-required.
+## Images
+
+### `ghcr.io/hunvreus/devpush-php-fpm-base:8.3`
+- **Engine:** PHP 8.3 FPM (Debian Bookworm)
+- **Web Server:** Caddy included (configured to proxy to FPM on port 8000)
+- **Extensions:** `bcmath`, `gd`, `intl`, `mbstring`, `opcache`, `pcntl`, `pdo_mysql`, `pdo_pgsql`, `zip`, `redis`
+- **Path:** `WORKDIR /app`
+
+### `ghcr.io/hunvreus/devpush-frankenphp-base:8.3`
+- **Engine:** FrankenPHP 1 (PHP 8.3)
+- **Features:** Optimized for Laravel Octane and worker mode.
+- **Extensions:** `bcmath`, `gd`, `intl`, `mbstring`, `opcache`, `pcntl`, `pdo_mysql`, `pdo_pgsql`, `zip`, `redis`
+- **Path:** `WORKDIR /app`
