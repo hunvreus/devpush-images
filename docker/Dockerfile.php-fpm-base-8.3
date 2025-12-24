@@ -36,6 +36,9 @@ WORKDIR /app
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ENV HOME=/home/appuser
 
+# Ensure php-fpm is available on PATH even if PATH is overridden at runtime.
+RUN ln -sf /usr/local/sbin/php-fpm /usr/local/bin/php-fpm
+
 # Configure PHP-FPM defaults
 RUN printf '%s\n' '[www]' 'user = appuser' 'group = appgroup' 'listen = 127.0.0.1:9000' 'clear_env = no' > /usr/local/etc/php-fpm.d/zz-devpush.conf && \
     printf '%s\n' '[global]' 'pid = /tmp/php-fpm.pid' > /usr/local/etc/php-fpm.d/zz-devpush-global.conf
