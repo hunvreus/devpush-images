@@ -1,7 +1,5 @@
 FROM dunglas/frankenphp:1-php8.3
 
-HEALTHCHECK NONE
-
 # Install system dependencies and PHP extensions
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -20,19 +18,3 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# Create non-root user
-RUN addgroup --system appgroup && \
-    adduser --system --ingroup appgroup --home /home/appuser appuser && \
-    install -d -m 0755 -o appuser -g appgroup /home/appuser /app
-
-WORKDIR /app
-
-# Remove default files safely
-RUN rm -rf /app/* /app/.[!.]* /app/..?* 2>/dev/null || true
-
-RUN chown -R appuser:appgroup /app
-
-USER appuser
-
-ENV HOME=/home/appuser
