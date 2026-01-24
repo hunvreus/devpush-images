@@ -18,6 +18,3 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# Remove upstream default phpinfo page
-RUN rm -rf /app
