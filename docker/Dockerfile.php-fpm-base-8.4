@@ -1,0 +1,34 @@
+# Use a separate stage to get the correct Caddy binary for the architecture
+FROM caddy:2-alpine AS caddy_bin
+
+FROM php:8.4-fpm-bookworm
+
+# Install system dependencies and PHP extensions
+# We use --mount=type=cache to persist APT downloads between CI runs
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git ca-certificates curl unzip zip \
+        libicu-dev libonig-dev libpng-dev libjpeg62-turbo-dev \
+        libfreetype6-dev libpq-dev libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    # -j$(nproc) uses all available CPU cores (huge speedup on native runners)
+    && docker-php-ext-install -j$(nproc) \
+        bcmath gd intl mbstring opcache pcntl pdo pdo_mysql pdo_pgsql zip \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Composer from official image
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Copy Caddy binary from the first stage (handles arm64/amd64 automatically)
+COPY --from=caddy_bin /usr/bin/caddy /usr/bin/caddy
+
+# Ensure php-fpm is available on PATH even if PATH is overridden at runtime.
+RUN ln -sf /usr/local/sbin/php-fpm /usr/local/bin/php-fpm
+
+# Configure PHP-FPM defaults
+RUN printf '%s\n' '[www]' 'user = appuser' 'group = appgroup' 'listen = 127.0.0.1:9000' 'clear_env = no' > /usr/local/etc/php-fpm.d/zz-devpush.conf && \
+    printf '%s\n' '[global]' 'pid = /tmp/php-fpm.pid' > /usr/local/etc/php-fpm.d/zz-devpush-global.conf

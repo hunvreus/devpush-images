@@ -18,25 +18,57 @@ jobs:
       matrix:
         include:
           - name: php-fpm-base
+            version: "8.3"
             dockerfile: docker/Dockerfile.php-fpm-base-8.3
             image: ghcr.io/hunvreus/devpush-php-fpm-base
             platform: linux/amd64
             arch: amd64
             runner: ubuntu-latest
           - name: php-fpm-base
+            version: "8.3"
             dockerfile: docker/Dockerfile.php-fpm-base-8.3
             image: ghcr.io/hunvreus/devpush-php-fpm-base
             platform: linux/arm64
             arch: arm64
             runner: ubuntu-24.04-arm
           - name: frankenphp-base
+            version: "8.3"
             dockerfile: docker/Dockerfile.frankenphp-base-8.3
             image: ghcr.io/hunvreus/devpush-frankenphp-base
             platform: linux/amd64
             arch: amd64
             runner: ubuntu-latest
           - name: frankenphp-base
+            version: "8.3"
             dockerfile: docker/Dockerfile.frankenphp-base-8.3
+            image: ghcr.io/hunvreus/devpush-frankenphp-base
+            platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - name: php-fpm-base
+            version: "8.4"
+            dockerfile: docker/Dockerfile.php-fpm-base-8.4
+            image: ghcr.io/hunvreus/devpush-php-fpm-base
+            platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-latest
+          - name: php-fpm-base
+            version: "8.4"
+            dockerfile: docker/Dockerfile.php-fpm-base-8.4
+            image: ghcr.io/hunvreus/devpush-php-fpm-base
+            platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - name: frankenphp-base
+            version: "8.4"
+            dockerfile: docker/Dockerfile.frankenphp-base-8.4
+            image: ghcr.io/hunvreus/devpush-frankenphp-base
+            platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-latest
+          - name: frankenphp-base
+            version: "8.4"
+            dockerfile: docker/Dockerfile.frankenphp-base-8.4
             image: ghcr.io/hunvreus/devpush-frankenphp-base
             platform: linux/arm64
             arch: arm64
@@ -64,10 +96,10 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ${{ matrix.image }}:8.3-${{ matrix.arch }}
-            ${{ matrix.image }}:sha-${{ github.sha }}-${{ matrix.arch }}
-          cache-from: type=gha,scope=${{ matrix.name }}-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}-${{ matrix.arch }}
+            ${{ matrix.image }}:${{ matrix.version }}-${{ matrix.arch }}
+            ${{ matrix.image }}:sha-${{ github.sha }}-${{ matrix.version }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ matrix.name }}-${{ matrix.version }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}-${{ matrix.version }}-${{ matrix.arch }}
 
   manifest:
     runs-on: ubuntu-latest
@@ -77,8 +109,16 @@ jobs:
         include:
           - name: php-fpm-base
             image: ghcr.io/hunvreus/devpush-php-fpm-base
+            version: "8.3"
           - name: frankenphp-base
             image: ghcr.io/hunvreus/devpush-frankenphp-base
+            version: "8.3"
+          - name: php-fpm-base
+            image: ghcr.io/hunvreus/devpush-php-fpm-base
+            version: "8.4"
+          - name: frankenphp-base
+            image: ghcr.io/hunvreus/devpush-frankenphp-base
+            version: "8.4"
     steps:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
@@ -93,7 +133,7 @@ jobs:
       - name: Create multi-arch manifest
         run: |
           docker buildx imagetools create \
-            -t ${{ matrix.image }}:8.3 \
-            -t ${{ matrix.image }}:sha-${GITHUB_SHA} \
-            ${{ matrix.image }}:8.3-amd64 \
-            ${{ matrix.image }}:8.3-arm64
+            -t ${{ matrix.image }}:${{ matrix.version }} \
+            -t ${{ matrix.image }}:sha-${GITHUB_SHA}-${{ matrix.version }} \
+            ${{ matrix.image }}:${{ matrix.version }}-amd64 \
+            ${{ matrix.image }}:${{ matrix.version }}-arm64

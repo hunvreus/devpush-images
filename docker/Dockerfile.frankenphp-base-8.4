@@ -1,0 +1,20 @@
+FROM dunglas/frankenphp:1-php8.4
+
+# Install system dependencies and PHP extensions
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates curl git unzip zip \
+        libicu-dev libonig-dev libpng-dev libjpeg62-turbo-dev \
+        libfreetype6-dev libpq-dev libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    # -j$(nproc) is essential here as FrankenPHP builds can be heavy
+    && docker-php-ext-install -j$(nproc) \
+        bcmath gd intl mbstring opcache pcntl pdo pdo_mysql pdo_pgsql zip \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && rm -rf /var/lib/apt/lists/*
+
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
